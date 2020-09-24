@@ -8,8 +8,15 @@ const daugianaris = (x) => {
   );
 };
 
-const skenavimoPradzia = -3.88;
-const skenavimoPabaiga = 7.05;
+const transcendentine = (x) => {
+  return 1.9 * x * Math.sin(x) - Math.pow(x / 1.5 - 3, 2);
+};
+
+const funkcijosNr = 1;
+let funkcijos = [daugianaris, transcendentine];
+
+const skenavimoPradzia = funkcijosNr === 0 ? -3.88 : -10;
+const skenavimoPabaiga = funkcijosNr === 0 ? 7.05 : 10;
 const zingsnis = 0.5;
 const maxIteraciju = 200;
 const eps1 = 1 / 1000000;
@@ -20,7 +27,10 @@ let saknuIntervalai = [];
 let x = skenavimoPradzia;
 
 while (x < skenavimoPabaiga) {
-  if (Math.sign(daugianaris(x)) !== Math.sign(daugianaris(x + zingsnis))) {
+  if (
+    Math.sign(funkcijos[funkcijosNr](x)) !==
+    Math.sign(funkcijos[funkcijosNr](x + zingsnis))
+  ) {
     saknuIntervalai.push([x, x + zingsnis]);
   }
   x += zingsnis;
@@ -57,12 +67,19 @@ const drawFunction = (funkcija, x1, x2) => {
   let index = 1;
   ctx.font = "30px Arial";
   ctx.fillText(0, rightX + 10, canvas.height / 2 + 30);
+  console.log("SCALE", scale);
   while (rightX < canvas.width || leftX > 0) {
     rightX = rightX + scale;
     leftX = leftX - scale;
+    if (index % Math.ceil(60 / scale) === 0) {
+      let text = index;
+      var metrics = ctx.measureText(text);
+      var textWidth = metrics.width;
 
-    ctx.fillText(index, rightX, canvas.height / 2 + 30);
-    ctx.fillText(-index, leftX, canvas.height / 2 + 30);
+      ctx.fillText(index, rightX - textWidth / 2, canvas.height / 2 + 30);
+      ctx.fillText(-index, leftX - textWidth / 2, canvas.height / 2 + 30);
+    }
+
     index++;
   }
 
@@ -106,7 +123,7 @@ const tikslinimasStyguMetodu = (n1, n2) => {
     let nMid = (n1 + k * n2) / (1 + k);
     if (ArTikslu(n1, n2, nMid)) {
       rado = true;
-      return "Rado per " + iteracija + " itercijų";
+      return "Rado per " + iteracija + " itercijų, saknis yra " + nMid;
     } else {
     }
 
@@ -124,13 +141,10 @@ const tikslinimasStyguMetodu = (n1, n2) => {
 const tikslinimasKirstiniuMetodu = (n1, n2, funkcija) => {
   let iteracija = 1;
 
-  console.log(n2, n1, funkcija);
-
   while (iteracija <= maxIteraciju) {
     let a = (funkcija(n2) - funkcija(n1)) / (n2 - n1);
     let b = funkcija(n2) - a * n2;
     let nMid = -b / a;
-    console.log("kirstinies", nMid, b, a);
     if (Math.abs(funkcija(nMid)) < eps1) {
       return "Rado per " + iteracija + " iteracijų, reiksme: " + nMid;
     }
@@ -145,26 +159,23 @@ const tikslinimasKirstiniuMetodu = (n1, n2, funkcija) => {
 const tikslinimasSiaurinantSkenavimoIntervala = (n1, n2, funkcija) => {
   let iteracija = 1;
   let mazejantisZingsnis = 0.125; // 4 kartus mazesnis uz pradini
-  while (iteracija <= maxIteraciju) {
-    let x = n1;
-    let rado = false;
-    while (x < n2 && !rado) {
-      if (
-        Math.sign(funkcija(x)) !== Math.sign(funkcija(x + mazejantisZingsnis))
-      ) {
-        rado = true;
-        n1 = x;
-        n2 = x + mazejantisZingsnis;
-        mazejantisZingsnis = mazejantisZingsnis / 4;
-      }
-      x += mazejantisZingsnis;
-    }
-    let nMid = (n2 + n1) / 2;
-    console.log(nMid);
-    if (ArTikslu(n1, n2, nMid)) {
-      return "Rado per " + iteracija + " iteracijų";
+  let x = n1;
+  let rado = false;
+  while (x < n2 && !rado && iteracija < maxIteraciju) {
+    if (
+      Math.sign(funkcija(x)) !== Math.sign(funkcija(x + mazejantisZingsnis))
+    ) {
+      rado = true;
+      n1 = x;
+      n2 = x + mazejantisZingsnis;
+      mazejantisZingsnis = mazejantisZingsnis / 4;
     }
     iteracija++;
+    x += mazejantisZingsnis;
+  }
+  let nMid = (n2 + n1) / 2;
+  if (ArTikslu(n1, n2, nMid)) {
+    return "Rado per " + iteracija + " iteracijų, saknis yra " + nMid;
   }
 
   return "Nerado";
@@ -173,26 +184,44 @@ const tikslinimasSiaurinantSkenavimoIntervala = (n1, n2, funkcija) => {
 const ArTikslu = (pradzia, pabaiga, vidurys) => {
   if (Math.abs(pradzia) + Math.abs(pabaiga) > eps1) {
     return (
-      Math.abs(daugianaris(vidurys)) < eps1 &&
+      Math.abs(funkcijos[funkcijosNr](vidurys)) < eps1 &&
       (pabaiga - pradzia) / Math.abs(vidurys) < eps2
     );
   } else {
-    Math.abs(daugianaris(vidurys)) < eps1 && pabaiga - pradzia < eps2;
+    Math.abs(funkcijos[funkcijosNr](vidurys)) < eps1 &&
+      pabaiga - pradzia < eps2;
   }
 };
 
+// 1 ir 5 METODAMS
 saknuIntervalai.forEach((x) => {
   console.log(
     "Intervalas: " +
       x +
       ", " +
-      tikslinimasSiaurinantSkenavimoIntervala(x[0], x[1], daugianaris)
+      tikslinimasSiaurinantSkenavimoIntervala(
+        x[0],
+        x[1],
+        funkcijos[funkcijosNr]
+      )
   );
 });
 
+//KIRSTINIU METODUI
+// saknuIntervalai.forEach((x) => {
+//   console.log(
+//     "Intervalas: " +
+//       x[0] +
+//       ", " +
+//       parseFloat(x[0] - 0.001) +
+//       ", " +
+//       tikslinimasKirstiniuMetodu(x[0], x[0] - 0.001, funkcijos[funkcijosNr])
+//   );
+// });
+
 const uzdavinys = {
-  art1: -0.05,
-  art2: 0,
+  art1: 0.0001,
+  art2: 0.0002,
   funkcija: (x) => {
     x = x === 0 ? 0.00000001 : x;
     return (
@@ -203,7 +232,7 @@ const uzdavinys = {
   },
 };
 
-drawFunction(uzdavinys.funkcija, -2, 100);
+// UZDAVINIO SPRENDIMAS
 console.log(
   "A Intervalas: " +
     x +
@@ -215,4 +244,11 @@ console.log(
     )
 );
 
-console.log(uzdavinys.funkcija(0.05525659555932179));
+//UZDAVINIO GRAFIKO PIESIMAS
+drawFunction(uzdavinys.funkcija, -2, 100);
+
+//DAUGIANARIO GRAFIKO PIESIMAS
+// drawFunction(daugianaris, -10, 10);
+
+//TRANSCENDENTINES GRAFIKO PIESIMAS
+// drawFunction(transcendentine, -5, 10); // -30 30 matosi visas grafikas
